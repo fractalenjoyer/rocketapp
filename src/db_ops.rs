@@ -19,7 +19,7 @@ pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Templat
             let first_name: String = user.get("first_name");
             let last_name: String = user.get("last_name");
             Some(Template::render("index", context! {
-                name: format!("{} {}", first_name, last_name),
+                name: format!("{first_name} {last_name}"),
                 title: "Hello!",
                 style: "index.css",
             }))

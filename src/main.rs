@@ -88,7 +88,7 @@ async fn upload(db: Connection<db_ops::MyDatabase>, mut post: Form<Post<'_>>) ->
     println!("Title: {}", post.title);
     let img_path = format!("{}.png", Uuid::new_v4());
     post.image
-        .persist_to(format!("static/content/{}", img_path))
+        .persist_to(format!("static/content/{img_path}", ))
         .await
         .ok()?;
     db_ops::create_post(
@@ -96,7 +96,7 @@ async fn upload(db: Connection<db_ops::MyDatabase>, mut post: Form<Post<'_>>) ->
         db_ops::Post {
             id: None,
             title: post.title.clone(),
-            body: "".to_string(),
+            body: String::new(),
             image: img_path,
         },
     )
