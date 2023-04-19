@@ -1,20 +1,16 @@
 use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::Connection;
 use rocket_db_pools::{sqlx, Database};
-
 use rocket_dyn_templates::{context, Template};
-
 #[derive(Database)]
 #[database("mysql")]
 pub struct MyDatabase(sqlx::MySqlPool);
-
 #[get("/<id>")]
 pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Template> {
     let user = sqlx::query("SELECT * FROM users where id = ?")
         .bind(id)
         .fetch_one(&mut *db)
         .await;
-
     match user {
         Ok(user) => {
             let first_name: String = user.get("first_name");
@@ -27,7 +23,6 @@ pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Templat
         Err(_) => None,
     }
 }
-
 #[get("/users")]
 pub async fn get_users(mut db: Connection<MyDatabase>) -> String {
     sqlx::query("SELECT * FROM users")

@@ -1,72 +1,90 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::fs::FileServer;
-use rocket::response::Redirect;
-use rocket::response::content::RawHtml;
+use std::sync::RwLock;
 
-use rocket_db_pools::{Database};
+use rocket::fs::FileServer;
+use rocket::response::content::RawHtml;
+use rocket::response::Redirect;
+
+// use rocket_db_pools::{Database};
 
 use rocket_dyn_templates::{context, Template};
-
-use maud::html;
-
-mod db_ops;
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
-        .attach(db_ops::MyDatabase::init())
+        // .attach(db_ops::MyDatabase::init())
         .attach(Template::fairing())
+        .register("/", catchers![not_found])
         .mount("/static", FileServer::from("static"))
-        .mount("/", routes![index, db_ops::get_user, hello, db_ops::get_users, new, upload])
+        .mount("/", routes![index, count, create, upload])
 }
-
 
 #[get("/")]
-fn index() -> RawHtml<String> {
-    RawHtml(html! {
-        head {
-            link rel="stylesheet" href="/static/styles/style.css" {}
-        }
-        img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Hamburger_icon.svg/2048px-Hamburger_icon.svg.png" {}
-        div {
-            h1 { "Hello, rocket!" }
-            p { "Pretty neat stuff" }
-        }
-    }.into_string())
-}
-
-#[get("/new")]
-fn new() -> Template {
-    Template::render("create", context! {
-            title: "Create a new user",
-        },
-    )
-}
-
-#[get("/hello/<name>")]
-fn hello(name: &str) -> Template {
-    Template::render("index", context! {
-            name: name,
+fn index() -> Template {
+    Template::render(
+        "index",
+        context! {
             title: "Hello!",
+            style: "index.css"
         },
     )
+}
+
+#[get("/upload")]
+fn create() -> Template {
+    Template::render(
+        "upload",
+        context! {
+            title: "Upload",
+            style: "upload.css"
+        },
+    )
+}
+
+#[catch(404)]
+fn not_found() -> Template {
+    Template::render(
+        "404",
+        context! {
+            title: "404",
+            style: "404.css"
+        },
+    )
+}
+
+static COUNT: RwLock<u32> = RwLock::new(0);
+
+#[get("/count")]
+fn count() -> Option<RawHtml<String>> {
+    let mut current = COUNT.write().ok()?;
+    *current += 1;
+
+    Some(RawHtml(
+        maud::html!(
+            h1 { "Count: " (*current) }
+        )
+        .into_string(),
+    ))
 }
 
 use rocket::form::Form;
 use rocket::fs::TempFile;
+use uuid::Uuid;
 
 #[derive(FromForm)]
 struct Post<'r> {
     title: String,
-    image: TempFile<'r>
+    image: TempFile<'r>,
 }
 
 #[post("/upload", data = "<post>")]
 async fn upload(mut post: Form<Post<'_>>) -> Option<Redirect> {
-    println!("Text: {}", post.title);
-    post.image.copy_to("static/images/damn.png").await.ok()?;
-    Some(Redirect::to("/new"))
+    println!("Title: {}", post.title);
+    post.image
+        .persist_to(format!("static/content/{}.png", Uuid::new_v4()))
+        .await
+        .ok()?;
+    Some(Redirect::to("/upload"))
 }
-

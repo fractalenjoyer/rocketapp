@@ -1,0 +1,6 @@
+{% extends "global/base" %}
+{% block content %}
+    <main>
+        the page you are looking for does not exist
+    </main>
+{% endblock content %}

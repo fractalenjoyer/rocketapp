@@ -4,4 +4,4 @@ url = "mysql://root:@localhost:3306/bruh"
 [default]
 template_dir = "templates"
 temp_dir = "tmp"
-limits = { bytes = "8KiB", data-form = "64MiB", file = "64MiB", form = "64MiB", json = "1MiB", msgpack = "1MiB", string = "8KiB" }
+limits = { data-form = "64MiB", file = "64MiB", form = "64MiB" }
