@@ -20,7 +20,7 @@ fn rocket() -> _ {
         .attach(Template::fairing())
         .register("/", catchers![not_found])
         .mount("/static", FileServer::from("static"))
-        .mount("/", routes![index, count, create, upload])
+        .mount("/", routes![index, count, create, upload, db_ops::get_users, db_ops::get_user])
 }
 
 #[get("/")]

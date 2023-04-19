@@ -21,6 +21,7 @@ pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Templat
             Some(Template::render("index", context! {
                 name: format!("{} {}", first_name, last_name),
                 title: "Hello!",
+                style: "index.css",
             }))
         }
         Err(_) => None,
