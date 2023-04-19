@@ -5,5 +5,6 @@
     <main>
         <h1>Home</h1>
         <p>Lorem ipsum dolor sit amet</p>
+        {{ macros::render_posts(posts=posts) }}
     </main>
 {% endblock content %}

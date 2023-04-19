@@ -2,6 +2,9 @@ use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::Connection;
 use rocket_db_pools::{sqlx, Database};
 use rocket_dyn_templates::{context, Template};
+
+use rocket::serde::Serialize;
+
 #[derive(Database)]
 #[database("mysql")]
 pub struct MyDatabase(sqlx::MySqlPool);
@@ -37,4 +40,39 @@ pub async fn get_users(mut db: Connection<MyDatabase>) -> String {
         })
         .collect::<Vec<String>>()
         .join("\n")
+}
+
+#[derive(Serialize, Debug)]
+#[serde(crate = "rocket::serde")]
+pub struct Post {
+    pub id: Option<i64>,
+    pub title: String,
+    pub body: String,
+    pub image: String,
+}
+
+pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO posts (title, body, image) VALUES (?, ?, ?)")
+        .bind(post.title)
+        .bind(post.body)
+        .bind(post.image)
+        .execute(&mut *db)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx::Error> {
+    let posts = sqlx::query("SELECT * FROM posts")
+        .fetch_all(&mut *db)
+        .await?;
+    let mut posts_vec = Vec::new();
+    for post in posts {
+        posts_vec.push(Post {
+            id: Some(post.get("id")),
+            title: post.get("title"),
+            body: post.get("body"),
+            image: post.get("image"),
+        });
+    }
+    Ok(posts_vec)
 }

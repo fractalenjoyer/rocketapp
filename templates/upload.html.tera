@@ -1,5 +1,6 @@
 {% extends "global/base" %}
 {% block content %}
+{% include "global/header" %}
 <h1> Create a new post </h1>
 <form action="/upload" method="POST" enctype="multipart/form-data">
     <input type="text" name="title" placeholder="Some Text">
