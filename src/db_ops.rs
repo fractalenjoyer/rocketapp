@@ -18,11 +18,14 @@ pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Templat
         Ok(user) => {
             let first_name: String = user.get("first_name");
             let last_name: String = user.get("last_name");
-            Some(Template::render("index", context! {
-                name: format!("{first_name} {last_name}"),
-                title: "Hello!",
-                style: "index.css",
-            }))
+            Some(Template::render(
+                "index",
+                context! {
+                    name: format!("{first_name} {last_name}"),
+                    title: "Hello!",
+                    style: "index.css",
+                },
+            ))
         }
         Err(_) => None,
     }
@@ -76,4 +79,35 @@ pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx
         });
     }
     Ok(posts_vec)
+}
+
+use pwhash::bcrypt;
+
+pub async fn create_user(
+    mut db: Connection<MyDatabase>,
+    username: String,
+    password: String,
+) -> Option<()> {
+    let hash = bcrypt::hash(password).ok()?;
+    sqlx::query("INSERT INTO users (username, password) VALUES (?, ?)")
+        .bind(username)
+        .bind(hash)
+        .execute(&mut *db)
+        .await
+        .ok()?;
+    Some(())
+}
+
+pub async fn login_user(
+    mut db: Connection<MyDatabase>,
+    username: String,
+    password: String,
+) -> Option<()> {
+    let user = sqlx::query("SELECT * FROM users where username = ?")
+        .bind(username)
+        .fetch_one(&mut *db)
+        .await
+        .ok()?;
+    let hash: String = user.get("password");
+    bcrypt::verify(password, &hash).then(|| ())
 }

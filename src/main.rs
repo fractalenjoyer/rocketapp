@@ -20,7 +20,19 @@ fn rocket() -> _ {
         .attach(Template::fairing())
         .register("/", catchers![not_found])
         .mount("/static", FileServer::from("static"))
-        .mount("/", routes![index, count, create, upload, db_ops::get_users, db_ops::get_user])
+        .mount(
+            "/",
+            routes![
+                index,
+                count,
+                create,
+                upload,
+                db_ops::get_users,
+                db_ops::get_user,
+                test,
+                test2
+            ],
+        )
 }
 
 #[get("/")]
@@ -88,7 +100,7 @@ async fn upload(db: Connection<db_ops::MyDatabase>, mut post: Form<Post<'_>>) ->
     println!("Title: {}", post.title);
     let img_path = format!("{}.png", Uuid::new_v4());
     post.image
-        .persist_to(format!("static/content/{img_path}", ))
+        .persist_to(format!("static/content/{img_path}",))
         .await
         .ok()?;
     db_ops::create_post(
@@ -103,4 +115,21 @@ async fn upload(db: Connection<db_ops::MyDatabase>, mut post: Form<Post<'_>>) ->
     .await
     .ok()?;
     Some(Redirect::to("/upload"))
+}
+
+#[derive(FromForm)]
+struct User {
+    username: String,
+    password: String,
+}
+
+#[post("/register", data = "<user>")]
+async fn register(db: Connection<db_ops::MyDatabase>, user: Form<User>) -> Option<Redirect> {
+    db_ops::create_user(db, user.into_inner()).ok()?;
+    Some(Redirect::to("/"))
+}
+
+#[get("/<password>/<hash>")]
+fn test2(password: String, hash: String) -> Option<String> {
+    Some(db_ops::verify_password(password, hash).to_string())
 }
