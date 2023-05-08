@@ -111,3 +111,16 @@ pub async fn login_user(
     let hash: String = user.get("password");
     bcrypt::verify(password, &hash).then(|| ())
 }
+
+pub async fn get_user_by_session (
+    mut db: Connection<MyDatabase>,
+    cookie: String,
+) -> Option<String> {
+    let user = sqlx::query("SELECT * FROM users where cookie = ?")
+        .bind(cookie)
+        .fetch_one(&mut *db)
+        .await
+        .ok()?;
+    let username: String = user.get("username");
+    Some(username)
+}
