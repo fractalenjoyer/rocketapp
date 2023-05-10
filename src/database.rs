@@ -1,62 +1,27 @@
 use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::Connection;
 use rocket_db_pools::{sqlx, Database};
-use rocket_dyn_templates::{context, Template};
 
 use rocket::serde::Serialize;
 
 #[derive(Database)]
 #[database("mysql")]
 pub struct MyDatabase(sqlx::MySqlPool);
-#[get("/<id>")]
-pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Template> {
-    let user = sqlx::query("SELECT * FROM users where id = ?")
-        .bind(id)
-        .fetch_one(&mut *db)
-        .await;
-    match user {
-        Ok(user) => {
-            let first_name: String = user.get("first_name");
-            let last_name: String = user.get("last_name");
-            Some(Template::render(
-                "index",
-                context! {
-                    name: format!("{first_name} {last_name}"),
-                    title: "Hello!",
-                    style: "index.css",
-                },
-            ))
-        }
-        Err(_) => None,
-    }
-}
-#[get("/users")]
-pub async fn get_users(mut db: Connection<MyDatabase>) -> String {
-    sqlx::query("SELECT * FROM users")
-        .fetch_all(&mut *db)
-        .await
-        .unwrap()
-        .iter()
-        .map(|row| {
-            let first_name: String = row.get::<String, _>("first_name");
-            let last_name: String = row.get("last_name");
-            format!("{} {}", first_name, last_name)
-        })
-        .collect::<Vec<String>>()
-        .join("\n")
-}
+
 
 #[derive(Serialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct Post {
     pub id: Option<i64>,
+    pub owner: i64,
     pub title: String,
     pub body: String,
     pub image: String,
 }
 
 pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(), sqlx::Error> {
-    sqlx::query("INSERT INTO posts (title, body, image) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO posts (owner, title, body, image) VALUES (?, ?, ?)")
+        .bind(post.owner)
         .bind(post.title)
         .bind(post.body)
         .bind(post.image)
@@ -73,6 +38,7 @@ pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx
     for post in posts {
         posts_vec.push(Post {
             id: Some(post.get("id")),
+            owner: post.get("owner"),
             title: post.get("title"),
             body: post.get("body"),
             image: post.get("image"),
@@ -81,46 +47,51 @@ pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx
     Ok(posts_vec)
 }
 
-use pwhash::bcrypt;
-
 pub async fn create_user(
     mut db: Connection<MyDatabase>,
     username: String,
-    password: String,
-) -> Option<()> {
-    let hash = bcrypt::hash(password).ok()?;
+    hash: String,
+) -> Option<i64> {
     sqlx::query("INSERT INTO users (username, password) VALUES (?, ?)")
         .bind(username)
         .bind(hash)
         .execute(&mut *db)
         .await
         .ok()?;
-    Some(())
+    let id: i64 = sqlx::query("SELECT LAST_INSERT_ID() as id")
+        .fetch_one(&mut *db)
+        .await
+        .ok()?
+        .get("id");
+    Some(id)
 }
 
-pub async fn login_user(
+// pub async fn login_user(
+//     mut db: Connection<MyDatabase>,
+//     username: String,
+//     password: String,
+// ) -> Option<()> {
+//     let user = sqlx::query("SELECT * FROM users where username = ?")
+//         .bind(username)
+//         .fetch_one(&mut *db)
+//         .await
+//         .ok()?;
+//     let hash: String = user.get("password");
+// }
+
+use crate::auth::User;
+
+pub async fn get_user (
     mut db: Connection<MyDatabase>,
-    username: String,
-    password: String,
-) -> Option<()> {
-    let user = sqlx::query("SELECT * FROM users where username = ?")
-        .bind(username)
+    sub: String
+) -> Option<User> {
+    let user = sqlx::query("SELECT * FROM users where id = ?")
+        .bind(sub.parse::<i64>().ok()?)
         .fetch_one(&mut *db)
         .await
         .ok()?;
-    let hash: String = user.get("password");
-    bcrypt::verify(password, &hash).then(|| ())
-}
-
-pub async fn get_user_by_session (
-    mut db: Connection<MyDatabase>,
-    cookie: String,
-) -> Option<String> {
-    let user = sqlx::query("SELECT * FROM users where cookie = ?")
-        .bind(cookie)
-        .fetch_one(&mut *db)
-        .await
-        .ok()?;
-    let username: String = user.get("username");
-    Some(username)
+    Some(User {
+        id: user.get("id"),
+        username: user.get("username"),
+    })
 }

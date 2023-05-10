@@ -5,3 +5,4 @@ url = "mysql://root:@localhost:3306/bruh"
 template_dir = "templates"
 temp_dir = "tmp"
 limits = { data-form = "64MiB", file = "64MiB", form = "64MiB" }
+secret = "JRHeR6OQBk2RqAhXRcp/q5RPfcGBGAeb++BeI89iQlA="

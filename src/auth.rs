@@ -1,36 +1,59 @@
-use rocket::request::{FromRequest, Request, Outcome};
-use rocket::outcome::Outcome::{Success, Failure};
+use rocket::outcome::Outcome::{Failure, Success};
+use rocket::request::{FromRequest, Outcome, Request};
+use rocket::serde::{self, Deserialize, Serialize};
+
+use pwhash::bcrypt;
 use rocket_db_pools::Connection;
 
 use crate::database;
 
 pub struct User {
-    username: String,
+    pub id: i64,
+    pub username: String,
 }
 
-pub struct SuperUser {
-    username: String,
-}
+impl User {
+    pub async fn new (
+        db: Connection<database::MyDatabase>,
+        username: String,
+        password: String,
+    ) -> Option<Self> {
+        let hash = bcrypt::hash(password).ok()?;
+        let id = database::create_user(db, username.clone(), hash).await?;
+        Some(Self { id, username })
+    }
 
-trait UserTrait {
-    fn get_username(&self) -> String;
+    pub fn claim(&self) -> Claim {
+        Claim::new(self.id.to_string(), chrono::Utc::now().timestamp() as usize + 86400)
+    }
 }
 
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for User {
     type Error = ();
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let session = req.cookies().get_private("session").map(|crumb| crumb.value().to_string());
-        let db = req.guard::<Connection<database::MyDatabase>>().await.unwrap();
-        match session {
-            Some(session) => {
-                let user = database::get_user_by_session(db, session).await.unwrap();
-                Success(User {
-                    username: user,
-                })
-            }
-            None => Failure((rocket::http::Status::Unauthorized, ())),
-        }
-        
+        let claim = if let Some(session) = req.cookies().get_private("session") {
+            serde::json::from_str::<Claim>(session.value()).unwrap()
+        } else {
+            return Failure((rocket::http::Status::Unauthorized, ()));
+        };
+        let db = req
+            .guard::<Connection<database::MyDatabase>>()
+            .await
+            .unwrap();
+        Success(database::get_user(db, claim.sub).await.unwrap())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "rocket::serde")]
+struct Claim {
+    sub: String,
+    exp: usize,
+}
+
+impl Claim {
+    fn new(sub: String, exp: usize) -> Self {
+        Self { sub, exp }
     }
 }
