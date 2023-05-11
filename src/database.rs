@@ -12,8 +12,8 @@ pub struct MyDatabase(sqlx::MySqlPool);
 #[derive(Serialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct Post {
-    pub id: Option<i64>,
-    pub owner: i64,
+    pub id: Option<i32>,
+    pub owner: i32,
     pub title: String,
     pub body: String,
     pub image: String,
@@ -51,14 +51,15 @@ pub async fn create_user(
     mut db: Connection<MyDatabase>,
     username: String,
     hash: String,
-) -> Option<i64> {
+) -> Option<i32> {
     sqlx::query("INSERT INTO users (username, password) VALUES (?, ?)")
-        .bind(username)
+        .bind(username.clone())
         .bind(hash)
         .execute(&mut *db)
         .await
         .ok()?;
-    let id: i64 = sqlx::query("SELECT LAST_INSERT_ID() as id")
+    println!("Created user {}", username);
+    let id: i32 = sqlx::query("SELECT LAST_INSERT_ID() as id")
         .fetch_one(&mut *db)
         .await
         .ok()?
@@ -66,18 +67,21 @@ pub async fn create_user(
     Some(id)
 }
 
-// pub async fn login_user(
-//     mut db: Connection<MyDatabase>,
-//     username: String,
-//     password: String,
-// ) -> Option<()> {
-//     let user = sqlx::query("SELECT * FROM users where username = ?")
-//         .bind(username)
-//         .fetch_one(&mut *db)
-//         .await
-//         .ok()?;
-//     let hash: String = user.get("password");
-// }
+pub async fn get_user_by_username(
+    mut db: Connection<MyDatabase>,
+    username: String,
+) -> Option<User> {
+    let user = sqlx::query("SELECT * FROM users where username = ?")
+        .bind(username)
+        .fetch_one(&mut *db)
+        .await
+        .ok()?;
+    Some(User {
+        id: user.get("id"),
+        username: user.get("username"),
+        pw_hash: user.get("password"),
+    })
+}
 
 use crate::auth::User;
 
@@ -93,5 +97,6 @@ pub async fn get_user (
     Some(User {
         id: user.get("id"),
         username: user.get("username"),
+        pw_hash: user.get("password"),
     })
 }

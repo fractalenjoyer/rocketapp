@@ -8,8 +8,9 @@ use rocket_db_pools::Connection;
 use crate::database;
 
 pub struct User {
-    pub id: i64,
+    pub id: i32,
     pub username: String,
+    pub pw_hash: String,
 }
 
 impl User {
@@ -19,8 +20,17 @@ impl User {
         password: String,
     ) -> Option<Self> {
         let hash = bcrypt::hash(password).ok()?;
-        let id = database::create_user(db, username.clone(), hash).await?;
-        Some(Self { id, username })
+        let id = database::create_user(db, username.clone(), hash.clone()).await?;
+        Some(Self { id, username, pw_hash: hash })
+    }
+
+    pub async fn login(db: Connection<database::MyDatabase>, username: String, password: String) -> Option<Self> {
+        let user = database::get_user_by_username(db, username.clone()).await?;
+        if bcrypt::verify(password, &user.pw_hash) {
+            Some(user)
+        } else {
+            None
+        }
     }
 
     pub fn claim(&self) -> Claim {
@@ -47,7 +57,7 @@ impl<'r> FromRequest<'r> for User {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "rocket::serde")]
-struct Claim {
+pub struct Claim {
     sub: String,
     exp: usize,
 }
@@ -55,5 +65,8 @@ struct Claim {
 impl Claim {
     fn new(sub: String, exp: usize) -> Self {
         Self { sub, exp }
+    }
+    pub fn to_string(&self) -> String {
+        serde::json::to_string(self).unwrap()
     }
 }

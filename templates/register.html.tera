@@ -1,0 +1,9 @@
+{% extends "global/base" %}
+{% block content %}
+{% include "global/header" %}
+    <form action="/register" method="post" enctype="multipart/form-data">
+        <input type="text" name="username">
+        <input type="password" name="password">
+        <input type="submit" value="Register">
+    </form>
+{% endblock content %}

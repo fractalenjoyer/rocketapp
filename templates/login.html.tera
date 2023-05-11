@@ -1,0 +1,9 @@
+{% extends "global/base" %}
+{% block content %}
+{% include "global/header" %}
+    <form action="/login" method="post" enctype="multipart/form-data">
+        <input type="text" name="username" placeholder="Username">
+        <input type="password" name="password" placeholder="Password">
+        <input type="submit" value="Login">
+    </form>
+{% endblock content %}

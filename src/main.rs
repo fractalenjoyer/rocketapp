@@ -25,7 +25,9 @@ fn rocket() -> _ {
                 pages::create_post,
                 pages::create,
                 pages::register,
-                pages::register_user
+                pages::register_user,
+                pages::login,
+                pages::login_user,
             ],
         )
 }

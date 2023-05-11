@@ -1,5 +1,5 @@
 [default.databases.mysql]
-url = "mysql://root:@localhost:3306/bruh"
+url = "mysql://root:@localhost:3306/rocketapp"
 
 [default]
 template_dir = "templates"

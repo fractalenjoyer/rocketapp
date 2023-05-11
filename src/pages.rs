@@ -1,5 +1,7 @@
 use rocket::form::Form;
+use rocket::http::Cookie;
 use rocket::http::CookieJar;
+use rocket::response::Redirect;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
@@ -58,7 +60,7 @@ pub fn register() -> Template {
     )
 }
 
-#[derive(FromForm)]
+#[derive(FromForm, Debug)]
 pub struct UserForm {
     username: String,
     password: String,
@@ -69,54 +71,35 @@ pub async fn register_user(
     db: Connection<database::MyDatabase>,
     user: Form<UserForm>,
     cookies: &CookieJar<'_>,
-) -> Option<Template> {
-    let user = auth::User::new(db, user.username.clone(), user.password.clone())
-        .await?;
-    Some(Template::render(
-        "index",
-        context! {
-            title: "Hello!",
-            style: "index.css",
-        },
-    ))
+) -> Option<Redirect> {
+    let user = auth::User::new(db, user.username.clone(), user.password.clone()).await?;
+    let claim = user.claim();
+    cookies.add_private(Cookie::new("session", claim.to_string()));
+    Some(Redirect::to("/"))
 }
 
+#[get("/login")]
+pub fn login() -> Template {
+    Template::render(
+        "login",
+        context! {
+            title: "Login",
+            style: "login.css"
+        },
+    )
+}
 
-// #[get("/<id>")]
-// pub async fn get_user(mut db: Connection<MyDatabase>, id: u32) -> Option<Template> {
-//     let user = sqlx::query("SELECT * FROM users where id = ?")
-//         .bind(id)
-//         .fetch_one(&mut *db)
-//         .await;
-//     match user {
-//         Ok(user) => {
-//             let first_name: String = user.get("first_name");
-//             let last_name: String = user.get("last_name");
-//             Some(Template::render(
-//                 "index",
-//                 context! {
-//                     name: format!("{first_name} {last_name}"),
-//                     title: "Hello!",
-//                     style: "index.css",
-//                 },
-//             ))
-//         }
-//         Err(_) => None,
-//     }
-// }
-
-// #[get("/users")]
-// pub async fn get_users(mut db: Connection<database::MyDatabase>) -> String {
-//     sqlx::query("SELECT * FROM users")
-//         .fetch_all(&mut *db)
-//         .await
-//         .unwrap()
-//         .iter()
-//         .map(|row| {
-//             let first_name: String = row.get::<String, _>("first_name");
-//             let last_name: String = row.get("last_name");
-//             format!("{} {}", first_name, last_name)
-//         })
-//         .collect::<Vec<String>>()
-//         .join("\n")
-// }
+#[post("/login", data = "<user>")]
+pub async fn login_user(
+    db: Connection<database::MyDatabase>,
+    user: Form<UserForm>,
+    cookies: &CookieJar<'_>,
+) -> Option<Redirect> {
+    let user = match auth::User::login(db, user.username.clone(), user.password.clone()).await {
+        Some(user) => user,
+        None => return Some(Redirect::to("/login")),
+    };
+    let claim = user.claim();
+    cookies.add_private(Cookie::new("session", claim.to_string()));
+    Some(Redirect::to("/"))
+}
