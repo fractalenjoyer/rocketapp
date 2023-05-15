@@ -33,9 +33,11 @@ pub async fn get_posts(
     mut db: Connection<MyDatabase>,
 ) -> Result<(Vec<Post>, Connection<MyDatabase>), sqlx::Error> {
     // this function is evil now
-    let posts = sqlx::query("SELECT * FROM posts")
+
+    let posts = sqlx::query("SELECT * FROM posts ORDER BY id DESC LIMIT 20")
         .fetch_all(&mut *db)
         .await?;
+
     let mut posts_vec = Vec::new();
     for post in posts {
         posts_vec.push(Post {

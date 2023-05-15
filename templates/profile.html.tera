@@ -2,4 +2,8 @@
 {% block content %}
 {% include "global/header" %}
  <a href="/api/logout">Sign out?</a>
+ {# <form action="/api/newavatar" method="post" enctype="multipart/form-data">
+    <label>Avatar (png only)<input type="file" name="avatar"></label>
+    <input type="submit" value="Upload">
+ </form> #}
 {% endblock content %}
