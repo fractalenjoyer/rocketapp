@@ -3,8 +3,8 @@
         <div class="post">
             <a href="/api/deletepost/{{post.1.id}}" class="delete-button"><i class="fa-solid fa-trash"></i></a>
             <a class="poster" href="/user/{{post.0}}">u/{{ post.0 }}</a>
-            <h2>{{ post.1.title }}</h2>
-            <img src='/static/content/{{ post.1.image }}'>
+            <h2 onclick="showPost('{{ post.1.id }}')">{{ post.1.title }}</h2>
+            <img onclick="showPost('{{ post.1.id }}')" src='/static/content/{{ post.1.image }}'>
         </div>     
     {% endfor %}
 {% endmacro render_posts %}

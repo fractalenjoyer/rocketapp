@@ -122,7 +122,11 @@ pub async fn get_user_by_id(mut db: Connection<MyDatabase>, sub: String) -> Opti
     })
 }
 
-pub async fn delete_post(mut db: Connection<MyDatabase>, owner_id: i32, post_id: i32) -> Option<()> {
+pub async fn delete_post(
+    mut db: Connection<MyDatabase>,
+    owner_id: i32,
+    post_id: i32,
+) -> Option<()> {
     sqlx::query("DELETE FROM posts WHERE id = ? AND owner_id = ?")
         .bind(post_id)
         .bind(owner_id)

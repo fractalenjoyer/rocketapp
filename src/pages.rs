@@ -48,8 +48,6 @@ pub fn register() -> Template {
     )
 }
 
-
-
 #[get("/login")]
 pub fn login() -> Template {
     Template::render(

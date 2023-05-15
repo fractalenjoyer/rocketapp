@@ -16,7 +16,7 @@ pub struct Post<'r> {
 pub async fn create_post(
     db: Connection<database::MyDatabase>,
     mut post: Form<Post<'_>>,
-    user_id: i32
+    user_id: i32,
 ) -> Option<Redirect> {
     println!("Title: {}", post.title);
     let img_path = format!("{}.png", Uuid::new_v4());
