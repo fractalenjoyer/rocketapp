@@ -1,9 +1,12 @@
 {% extends "global/base" %}
 {% block content %}
 {% include "global/header" %}
-    <form action="/login" method="post" enctype="multipart/form-data">
+<main>
+    <form action="/api/login" method="post" enctype="multipart/form-data">
         <input type="text" name="username" placeholder="Username">
         <input type="password" name="password" placeholder="Password">
         <input type="submit" value="Login">
     </form>
+    <p>Don't have an account? <a href="/register"> Register Here</a></p>
+</main>
 {% endblock content %}

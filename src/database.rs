@@ -8,7 +8,6 @@ use rocket::serde::Serialize;
 #[database("mysql")]
 pub struct MyDatabase(sqlx::MySqlPool);
 
-
 #[derive(Serialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct Post {
@@ -20,7 +19,7 @@ pub struct Post {
 }
 
 pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(), sqlx::Error> {
-    sqlx::query("INSERT INTO posts (owner, title, body, image) VALUES (?, ?, ?)")
+    sqlx::query("INSERT INTO posts (owner_id, title, body, image) VALUES (?, ?, ?, ?)")
         .bind(post.owner)
         .bind(post.title)
         .bind(post.body)
@@ -30,7 +29,10 @@ pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(
     Ok(())
 }
 
-pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx::Error> {
+pub async fn get_posts(
+    mut db: Connection<MyDatabase>,
+) -> Result<(Vec<Post>, Connection<MyDatabase>), sqlx::Error> {
+    // this function is evil now
     let posts = sqlx::query("SELECT * FROM posts")
         .fetch_all(&mut *db)
         .await?;
@@ -38,13 +40,33 @@ pub async fn get_posts(mut db: Connection<MyDatabase>) -> Result<Vec<Post>, sqlx
     for post in posts {
         posts_vec.push(Post {
             id: Some(post.get("id")),
-            owner: post.get("owner"),
+            owner: post.get("owner_id"),
             title: post.get("title"),
             body: post.get("body"),
             image: post.get("image"),
         });
     }
-    Ok(posts_vec)
+
+    Ok((posts_vec, db))
+}
+
+pub async fn get_users_by_posts(
+    mut db: Connection<MyDatabase>,
+    posts: &Vec<Post>,
+) -> Result<Vec<User>, sqlx::Error> {
+    let mut users = Vec::new();
+    for post in posts {
+        let user = sqlx::query("SELECT * FROM users WHERE id = ?")
+            .bind(post.owner)
+            .fetch_one(&mut *db)
+            .await?;
+        users.push(User {
+            id: user.get("id"),
+            username: user.get("username"),
+            pw_hash: None,
+        });
+    }
+    Ok(users)
 }
 
 pub async fn create_user(
@@ -59,12 +81,12 @@ pub async fn create_user(
         .await
         .ok()?;
     println!("Created user {}", username);
-    let id: i32 = sqlx::query("SELECT LAST_INSERT_ID() as id")
+    let id: u64 = sqlx::query("SELECT LAST_INSERT_ID() as id")
         .fetch_one(&mut *db)
         .await
         .ok()?
         .get("id");
-    Some(id)
+    Some(id as i32)
 }
 
 pub async fn get_user_by_username(
@@ -85,10 +107,7 @@ pub async fn get_user_by_username(
 
 use crate::auth::User;
 
-pub async fn get_user (
-    mut db: Connection<MyDatabase>,
-    sub: String
-) -> Option<User> {
+pub async fn get_user_by_id(mut db: Connection<MyDatabase>, sub: String) -> Option<User> {
     let user = sqlx::query("SELECT * FROM users where id = ?")
         .bind(sub.parse::<i64>().ok()?)
         .fetch_one(&mut *db)
@@ -99,4 +118,14 @@ pub async fn get_user (
         username: user.get("username"),
         pw_hash: user.get("password"),
     })
+}
+
+pub async fn delete_post(mut db: Connection<MyDatabase>, owner_id: i32, post_id: i32) -> Option<()> {
+    sqlx::query("DELETE FROM posts WHERE id = ? AND owner_id = ?")
+        .bind(post_id)
+        .bind(owner_id)
+        .execute(&mut *db)
+        .await
+        .ok()?;
+    Some(())
 }

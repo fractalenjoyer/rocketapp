@@ -1,0 +1,5 @@
+{% extends "global/base" %}
+{% block content %}
+{% include "global/header" %}
+ <a href="/api/logout">Sign out?</a>
+{% endblock content %}

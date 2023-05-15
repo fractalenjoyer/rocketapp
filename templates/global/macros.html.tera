@@ -1,8 +1,10 @@
 {% macro render_posts(posts, type="text") %}
     {% for post in posts %}
         <div class="post">
-            <h2>{{ post.title }}</h2>
-            <img src='/static/content/{{ post.image }}'>
+            <a href="/api/deletepost/{{post.1.id}}" class="delete-button"><i class="fa-solid fa-trash"></i></a>
+            <a class="poster" href="/user/{{post.0}}">u/{{ post.0 }}</a>
+            <h2>{{ post.1.title }}</h2>
+            <img src='/static/content/{{ post.1.image }}'>
         </div>     
     {% endfor %}
 {% endmacro render_posts %}

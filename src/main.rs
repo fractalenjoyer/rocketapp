@@ -1,35 +1,56 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::fs::FileServer;
+use rocket::{fs::FileServer, response::content::RawHtml};
 use rocket_db_pools::Database;
 use rocket_dyn_templates::{context, Template};
 
-mod database;
+mod api;
 mod auth;
+mod database;
 mod files;
 mod pages;
-
 
 #[launch]
 fn rocket() -> _ {
     rocket::build()
         .attach(database::MyDatabase::init())
         .attach(Template::fairing())
-        .register("/", catchers![not_found])
+        .register("/", catchers![not_found, unauthorized])
         .mount("/static", FileServer::from("static"))
         .mount(
             "/",
             routes![
                 pages::index,
-                pages::create_post,
                 pages::create,
                 pages::register,
-                pages::register_user,
                 pages::login,
-                pages::login_user,
+                pages::profile,
             ],
         )
+        .mount(
+            "/api",
+            routes![
+                api::whoami,
+                api::userdetails,
+                api::deletepost,
+                api::create_post,
+                api::register_user,
+                api::login_user,
+                api::logout
+            ],
+        )
+}
+
+#[catch(401)]
+fn unauthorized() -> RawHtml<String> {
+    RawHtml(
+        maud::html!(
+            h1 { "Login to view this page" }
+            a href="/login" { "Login" }
+        )
+        .into_string(),
+    )
 }
 
 #[catch(404)]

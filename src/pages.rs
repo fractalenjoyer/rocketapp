@@ -1,29 +1,33 @@
-use rocket::form::Form;
-use rocket::http::Cookie;
-use rocket::http::CookieJar;
-use rocket::response::Redirect;
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
 use crate::auth;
 use crate::database;
-use crate::files;
+use crate::database::Post;
 
 #[get("/")]
 pub async fn index(db: Connection<database::MyDatabase>) -> Option<Template> {
-    let posts = database::get_posts(db).await.ok()?;
+    let (posts, db) = database::get_posts(db).await.ok()?;
+    let posts = database::get_users_by_posts(db, &posts)
+        .await
+        .ok()?
+        .iter()
+        .map(|user| user.username.clone())
+        .zip(posts.iter())
+        .collect::<Vec<(String, &Post)>>();
+
     Some(Template::render(
         "index",
         context! {
             title: "Hello!",
             style: "index.css",
-            posts
+            posts,
         },
     ))
 }
 
 #[get("/upload")]
-pub fn create() -> Template {
+pub fn create(_user: auth::User) -> Template {
     Template::render(
         "upload",
         context! {
@@ -33,50 +37,18 @@ pub fn create() -> Template {
     )
 }
 
-#[post("/new", data = "<post>")]
-pub async fn create_post(
-    user: auth::User,
-    db: Connection<database::MyDatabase>,
-    post: Form<files::Post<'_>>,
-) -> Option<Template> {
-    files::create_post(db, post, user.id).await?;
-    Some(Template::render(
-        "index",
-        context! {
-            title: "Hello!",
-            style: "index.css",
-        },
-    ))
-}
-
 #[get("/register")]
 pub fn register() -> Template {
     Template::render(
         "register",
         context! {
             title: "Register",
-            style: "register.css"
+            style: "login.css"
         },
     )
 }
 
-#[derive(FromForm, Debug)]
-pub struct UserForm {
-    username: String,
-    password: String,
-}
 
-#[post("/register", data = "<user>")]
-pub async fn register_user(
-    db: Connection<database::MyDatabase>,
-    user: Form<UserForm>,
-    cookies: &CookieJar<'_>,
-) -> Option<Redirect> {
-    let user = auth::User::new(db, user.username.clone(), user.password.clone()).await?;
-    let claim = user.claim();
-    cookies.add_private(Cookie::new("session", claim.to_string()));
-    Some(Redirect::to("/"))
-}
 
 #[get("/login")]
 pub fn login() -> Template {
@@ -89,17 +61,13 @@ pub fn login() -> Template {
     )
 }
 
-#[post("/login", data = "<user>")]
-pub async fn login_user(
-    db: Connection<database::MyDatabase>,
-    user: Form<UserForm>,
-    cookies: &CookieJar<'_>,
-) -> Option<Redirect> {
-    let user = match auth::User::login(db, user.username.clone(), user.password.clone()).await {
-        Some(user) => user,
-        None => return Some(Redirect::to("/login")),
-    };
-    let claim = user.claim();
-    cookies.add_private(Cookie::new("session", claim.to_string()));
-    Some(Redirect::to("/"))
+#[get("/profile")]
+pub async fn profile(_user: auth::User) -> Option<Template> {
+    Some(Template::render(
+        "profile",
+        context! {
+            title: "Profile",
+            style: "profile.css",
+        },
+    ))
 }

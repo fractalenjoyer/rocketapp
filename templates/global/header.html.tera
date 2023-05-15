@@ -5,5 +5,12 @@
         <a href="/upload"><p>Upload</p></a>
         <a href="/about"><p>About</p></a>
         <a href="/contact"><p>Contact</p></a>
+        <div class="grower"></div>
+        <p id="hello"></p>
+        <div class="profile">
+            <a href="/{{ profile | default(value='login') }}">
+                <i class="fa-solid fa-user"></i>
+            </a>
+        </div>
     </nav>
 </header>

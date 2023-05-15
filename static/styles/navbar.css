@@ -22,3 +22,7 @@ nav a {
     padding: 1rem;
     transition: all 0.3s ease-in-out;
 }
+
+.grower {
+    flex-grow: 1;
+}
