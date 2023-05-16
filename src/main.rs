@@ -39,7 +39,8 @@ fn rocket() -> _ {
                 api::create_post,
                 api::register_user,
                 api::login_user,
-                api::logout
+                api::logout,
+                api::comment
             ],
         )
 }

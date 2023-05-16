@@ -1,10 +1,15 @@
+{% import "global/macros" as macros %}
 {% extends "global/base" %}
 {% block content %}
 <link rel="stylesheet" href="/static/styles/post.css">
  <main>
-    <p class="poster">u/{{ poster }}</p>
+    <a class="poster" href="/user/{{ poster }}">u/{{ poster }}</a>
     <h1>{{ post.title | default(value='Test')}}</h1>
     <img src="/static/content/{{ post.image }}" alt="">
     <p>{{ post.body }}</p>
+    <form action="/api/comment/{{ post.id }}" method="post" enctype="multipart/form-data">
+        <input type="text" name="body" placeholder="Comment">
+    </form>
+    {{macros::render_comments(comments=comments)}}
  </main>
 {% endblock content %}

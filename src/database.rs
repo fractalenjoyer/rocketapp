@@ -18,6 +18,15 @@ pub struct Post {
     pub image: String,
 }
 
+#[derive(Serialize, Debug)]
+#[serde(crate = "rocket::serde")]
+pub struct Comment {
+    pub id: Option<i32>,
+    pub owner: i32,
+    pub post_id: i32,
+    pub body: String,
+}
+
 pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(), sqlx::Error> {
     sqlx::query("INSERT INTO posts (owner_id, title, body, image) VALUES (?, ?, ?, ?)")
         .bind(post.owner)
@@ -32,7 +41,7 @@ pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(
 pub async fn get_post_by_id(
     mut db: Connection<MyDatabase>,
     id: i32,
-) -> Result<(Post, String), sqlx::Error> {
+) -> Result<(Post, String, Vec<Comment>), sqlx::Error> {
     let post = sqlx::query("SELECT * FROM posts WHERE id = ?")
         .bind(id)
         .fetch_one(&mut *db)
@@ -52,7 +61,45 @@ pub async fn get_post_by_id(
         .await?
         .get("username");
 
-    Ok((post, poster))
+    let comments = match get_comments(db, id).await {
+        Some(comments) => comments,
+        None => Vec::new(),
+    };
+
+    Ok((post, poster, comments))
+}
+
+pub async fn create_comment(
+    mut db: Connection<MyDatabase>,
+    comment: Comment,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("INSERT INTO comments (owner_id, post_id, body) VALUES (?, ?, ?)")
+        .bind(comment.owner)
+        .bind(comment.post_id)
+        .bind(comment.body)
+        .execute(&mut *db)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Option<Vec<Comment>> {
+    let comments = sqlx::query("SELECT * FROM comments WHERE post_id = ?")
+        .bind(post_id)
+        .fetch_all(&mut *db)
+        .await
+        .ok()?;
+
+    let mut comments_vec = Vec::new();
+    for comment in comments {
+        comments_vec.push(Comment {
+            id: Some(comment.get("id")),
+            owner: comment.get("owner_id"),
+            post_id: comment.get("post_id"),
+            body: comment.get("body"),
+        });
+    }
+
+    Some(comments_vec)
 }
 
 pub async fn get_posts(

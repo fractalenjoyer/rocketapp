@@ -65,14 +65,15 @@ pub async fn profile(_user: auth::User) -> Option<Template> {
 
 #[get("/post/<id>")]
 pub async fn post(id: i32, db: Connection<database::MyDatabase>) -> Option<Template> {
-    let (post, poster) = database::get_post_by_id(db, id).await.ok()?;
+    let (post, poster, comments) = database::get_post_by_id(db, id).await.ok()?;
     Some(Template::render(
         "post",
         context! {
             title: "Post",
             style: "post.css",
             post,
-            poster
+            poster,
+            comments
         },
     ))
 }

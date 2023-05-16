@@ -8,3 +8,9 @@
         </div>     
     {% endfor %}
 {% endmacro render_posts %}
+
+{% macro render_comments(comments, type="text") %}
+    {% for comment in comments %}
+        <p class="comment">{{ comment.body }}</p>
+    {% endfor %}
+{% endmacro render_comments %}

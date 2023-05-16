@@ -87,3 +87,29 @@ pub async fn create_post(
     files::create_post(db, post, user.id).await?;
     Some(Redirect::to("/"))
 }
+
+#[derive(FromForm, Debug)]
+pub struct Comment {
+    body: String,
+}
+
+#[post("/comment/<id>", data = "<comment>")]
+pub async fn comment(
+    id: i32,
+    user: auth::User,
+    db: Connection<database::MyDatabase>,
+    comment: Form<Comment>,
+) -> Option<Redirect> {
+    database::create_comment(
+        db,
+        database::Comment {
+            id: None,
+            owner: user.id,
+            post_id: id,
+            body: comment.body.clone(),
+        },
+    )
+    .await
+    .ok()?;
+    Some(Redirect::to(format!("/post/{id}")))
+}

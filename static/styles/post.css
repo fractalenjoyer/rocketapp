@@ -10,6 +10,8 @@ main {
     top: 0.5rem;
     left: 1rem;
     margin: 0;
+    text-decoration: none;
+    color: var(--text-color);
 }
 
 img {
