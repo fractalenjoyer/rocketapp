@@ -83,7 +83,7 @@ pub async fn create_comment(
 }
 
 pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Option<Vec<Comment>> {
-    let comments = sqlx::query("SELECT * FROM comments WHERE post_id = ?")
+    let comments = sqlx::query("SELECT * FROM comments WHERE post_id = ? ORDER BY id DESC LIMIT 40")
         .bind(post_id)
         .fetch_all(&mut *db)
         .await
