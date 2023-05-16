@@ -27,6 +27,7 @@ fn rocket() -> _ {
                 pages::register,
                 pages::login,
                 pages::profile,
+                pages::post,
             ],
         )
         .mount(

@@ -29,46 +29,60 @@ pub async fn create_post(mut db: Connection<MyDatabase>, post: Post) -> Result<(
     Ok(())
 }
 
+pub async fn get_post_by_id(
+    mut db: Connection<MyDatabase>,
+    id: i32,
+) -> Result<(Post, String), sqlx::Error> {
+    let post = sqlx::query("SELECT * FROM posts WHERE id = ?")
+        .bind(id)
+        .fetch_one(&mut *db)
+        .await?;
+
+    let post = Post {
+        id: Some(post.get("id")),
+        owner: post.get("owner_id"),
+        title: post.get("title"),
+        body: post.get("body"),
+        image: post.get("image"),
+    };
+
+    let poster = sqlx::query("SELECT username FROM users WHERE id = ?")
+        .bind(post.owner)
+        .fetch_one(&mut *db)
+        .await?
+        .get("username");
+
+    Ok((post, poster))
+}
+
 pub async fn get_posts(
     mut db: Connection<MyDatabase>,
-) -> Result<(Vec<Post>, Connection<MyDatabase>), sqlx::Error> {
-    // this function is evil now
-
+) -> Result<(Vec<Post>, Vec<String>), sqlx::Error> {
     let posts = sqlx::query("SELECT * FROM posts ORDER BY id DESC LIMIT 20")
         .fetch_all(&mut *db)
         .await?;
 
     let mut posts_vec = Vec::new();
+    let mut posters: Vec<String> = Vec::new();
     for post in posts {
+        let owner_id: i32 = post.get("owner_id");
         posts_vec.push(Post {
             id: Some(post.get("id")),
-            owner: post.get("owner_id"),
+            owner: owner_id,
             title: post.get("title"),
             body: post.get("body"),
             image: post.get("image"),
         });
+        posters.push(
+            sqlx::query("SELECT username FROM users WHERE id = ?")
+                .bind(owner_id)
+                .fetch_one(&mut *db)
+                .await?
+                .get("username"),
+        )
     }
 
-    Ok((posts_vec, db))
-}
-
-pub async fn get_users_by_posts(
-    mut db: Connection<MyDatabase>,
-    posts: &Vec<Post>,
-) -> Result<Vec<User>, sqlx::Error> {
-    let mut users = Vec::new();
-    for post in posts {
-        let user = sqlx::query("SELECT * FROM users WHERE id = ?")
-            .bind(post.owner)
-            .fetch_one(&mut *db)
-            .await?;
-        users.push(User {
-            id: user.get("id"),
-            username: user.get("username"),
-            pw_hash: None,
-        });
-    }
-    Ok(users)
+    Ok((posts_vec, posters))
 }
 
 pub async fn create_user(
@@ -108,6 +122,7 @@ pub async fn get_user_by_username(
 }
 
 use crate::auth::User;
+use crate::files;
 
 pub async fn get_user_by_id(mut db: Connection<MyDatabase>, sub: String) -> Option<User> {
     let user = sqlx::query("SELECT * FROM users where id = ?")
@@ -127,11 +142,19 @@ pub async fn delete_post(
     owner_id: i32,
     post_id: i32,
 ) -> Option<()> {
+    let path: String = sqlx::query("SELECT image FROM posts WHERE id = ? AND owner_id = ?")
+        .bind(post_id)
+        .bind(owner_id)
+        .fetch_one(&mut *db)
+        .await
+        .ok()?
+        .get("image");
     sqlx::query("DELETE FROM posts WHERE id = ? AND owner_id = ?")
         .bind(post_id)
         .bind(owner_id)
         .execute(&mut *db)
         .await
         .ok()?;
+    files::delete_file(path)?;
     Some(())
 }

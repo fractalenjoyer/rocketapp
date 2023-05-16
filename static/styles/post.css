@@ -1,0 +1,17 @@
+main {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    position: relative;
+}
+
+.poster {
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    margin: 0;
+}
+
+img {
+    width: 80%;
+}

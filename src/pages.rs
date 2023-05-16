@@ -3,25 +3,18 @@ use rocket_dyn_templates::{context, Template};
 
 use crate::auth;
 use crate::database;
-use crate::database::Post;
 
 #[get("/")]
 pub async fn index(db: Connection<database::MyDatabase>) -> Option<Template> {
-    let (posts, db) = database::get_posts(db).await.ok()?;
-    let posts = database::get_users_by_posts(db, &posts)
-        .await
-        .ok()?
-        .iter()
-        .map(|user| user.username.clone())
-        .zip(posts.iter())
-        .collect::<Vec<(String, &Post)>>();
-
+    let (posts, posters) = database::get_posts(db).await.ok()?;
+    println!("{:?}", posters);
     Some(Template::render(
         "index",
         context! {
             title: "Hello!",
             style: "index.css",
             posts,
+            posters
         },
     ))
 }
@@ -66,6 +59,20 @@ pub async fn profile(_user: auth::User) -> Option<Template> {
         context! {
             title: "Profile",
             style: "profile.css",
+        },
+    ))
+}
+
+#[get("/post/<id>")]
+pub async fn post(id: i32, db: Connection<database::MyDatabase>) -> Option<Template> {
+    let (post, poster) = database::get_post_by_id(db, id).await.ok()?;
+    Some(Template::render(
+        "post",
+        context! {
+            title: "Post",
+            style: "post.css",
+            post,
+            poster
         },
     ))
 }

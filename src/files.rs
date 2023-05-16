@@ -10,6 +10,7 @@ use crate::database;
 #[derive(FromForm)]
 pub struct Post<'r> {
     title: String,
+    body: String,
     image: TempFile<'r>,
 }
 
@@ -30,11 +31,16 @@ pub async fn create_post(
             id: None,
             owner: user_id,
             title: post.title.clone(),
-            body: String::new(),
+            body: post.body.clone(),
             image: img_path,
         },
     )
     .await
     .ok()?;
     Some(Redirect::to("/upload"))
+}
+
+pub fn delete_file(path: String) -> Option<()>{
+    std::fs::remove_file(format!("static/content/{}", path)).ok()?;
+    Some(())
 }
