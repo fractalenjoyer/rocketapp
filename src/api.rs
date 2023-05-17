@@ -104,7 +104,8 @@ pub async fn comment(
         db,
         database::Comment {
             id: None,
-            owner: user.id,
+            owner: None,
+            owner_id: user.id,
             post_id: id,
             body: comment.body.clone(),
         },

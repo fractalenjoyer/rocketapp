@@ -14,6 +14,53 @@ main {
     color: var(--text-color);
 }
 
+.post-body {
+    width: 80%;
+}
+
 img {
     width: 80%;
+}
+
+.comment {
+    width: 90%;
+    position: relative;
+    margin: 1rem 0;
+    border: 1px solid var(--theyellowone);
+    border-radius: 0.5rem;
+}
+
+.delete-button {
+    text-decoration: none;
+    color: var(--text-color);
+    top: 1rem;
+    right: 1rem;
+    position: absolute;
+}
+
+.comment-poster {
+    text-decoration: none;
+    color: var(--text-color);
+    margin-left: 1rem;
+    padding-top: 0.5rem;
+}
+
+.comment-body {
+    margin: 0.5rem 1rem;
+}
+
+form {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.comment-input {
+    width: 95%;
+    margin: 1rem 0;
+    background-color: var(--ligher-dark);
+    border: 1px solid var(--theyellowone);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: var(--text-color);
 }

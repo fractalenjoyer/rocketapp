@@ -77,3 +77,17 @@ pub async fn post(id: i32, db: Connection<database::MyDatabase>) -> Option<Templ
         },
     ))
 }
+
+#[get("/user/<username>")]
+pub async fn user(username: String, db: Connection<database::MyDatabase>) -> Option<Template> {
+    let (posts, posters) = database::get_posts_by_user(db, username).await.ok()?;
+    Some(Template::render(
+        "user",
+        context! {
+            title: "User",
+            style: "user.css",
+            posts,
+            posters
+        },
+    ))
+}

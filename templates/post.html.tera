@@ -6,9 +6,9 @@
     <a class="poster" href="/user/{{ poster }}">u/{{ poster }}</a>
     <h1>{{ post.title | default(value='Test')}}</h1>
     <img src="/static/content/{{ post.image }}" alt="">
-    <p>{{ post.body }}</p>
+    <p class="post-body">{{ post.body }}</p>
     <form action="/api/comment/{{ post.id }}" method="post" enctype="multipart/form-data">
-        <input type="text" name="body" placeholder="Comment">
+        <input type="text" name="body" placeholder="Comment" class="comment-input">
     </form>
     {{macros::render_comments(comments=comments)}}
  </main>

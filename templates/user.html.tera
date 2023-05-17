@@ -1,0 +1,12 @@
+{% import "global/macros" as macros %} 
+{% extends "global/base" %} 
+{% block content %} {% include "global/header" %}
+<script defer src="/static/scripts/user.js"></script>
+<main>
+	<div class="modal">
+		<iframe frameborder="0" class="modal-content"></iframe>
+	</div>
+	<h1>{{ posters.0 }}</h1>
+	{{ macros::render_posts(posts=posts) }}
+</main>
+{% endblock content %}

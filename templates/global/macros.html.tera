@@ -11,6 +11,10 @@
 
 {% macro render_comments(comments, type="text") %}
     {% for comment in comments %}
-        <p class="comment">{{ comment.body }}</p>
+        <div class="comment">
+            <a href="/api/deletecomment/{{comment.id}}" class="delete-button"><i class="fa-solid fa-trash"></i></a>
+            <a class="comment-poster" href="/user/{{ comment.owner }}">u/{{ comment.owner }}</a>
+            <p class="comment-body">{{ comment.body }}</p>
+        </div>
     {% endfor %}
 {% endmacro render_comments %}
