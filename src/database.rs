@@ -1,4 +1,5 @@
 /// This file contains all of the sites database operations
+/// 
 use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::Connection;
 use rocket_db_pools::{sqlx, Database};
@@ -73,29 +74,26 @@ pub async fn create_user(
     mut db: Connection<MyDatabase>,
     username: String,
     hash: String,
-) -> Option<i32> {
+) -> Result<i32, Box<dyn std::error::Error>> {
     match sqlx::query("SELECT * FROM users WHERE username = ?")
         .bind(username.clone())
         .fetch_optional(&mut *db)
-        .await
-        .ok()?
+        .await?
     {
-        Some(_) => return None,
+        Some(_) => return Err("Username already taken".into()),
         None => {}
     }
     sqlx::query("INSERT INTO users (username, password) VALUES (?, ?)")
         .bind(username.clone())
         .bind(hash)
         .execute(&mut *db)
-        .await
-        .ok()?;
+        .await?;
     println!("Created user {}", username);
     let id: u64 = sqlx::query("SELECT LAST_INSERT_ID() as id")
         .fetch_one(&mut *db)
-        .await
-        .ok()?
+        .await?
         .get("id");
-    Some(id as i32)
+    Ok(id as i32)
 }
 
 /// returns a post along with the username of the owner and all comments
@@ -124,8 +122,8 @@ pub async fn get_post_by_id(
         .get("username");
 
     let comments = match get_comments(db, id).await {
-        Some(comments) => comments,
-        None => Vec::new(),
+        Ok(comments) => comments,
+        Err(_) => Vec::new(),
     };
 
     Ok((post, poster, comments))
@@ -134,13 +132,12 @@ pub async fn get_post_by_id(
 /// get comments for a post
 /// returns a vector of comments for the given post id
 /// returns None if the database query fails
-pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Option<Vec<Comment>> {
+pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Result<Vec<Comment>, sqlx::Error> {
     let comments =
         sqlx::query("SELECT * FROM comments WHERE post_id = ? ORDER BY id DESC LIMIT 40")
             .bind(post_id)
             .fetch_all(&mut *db)
-            .await
-            .ok()?;
+            .await?;
 
     let mut comments_vec = Vec::new();
     for comment in comments {
@@ -148,8 +145,7 @@ pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Optio
         let owner = sqlx::query("SELECT username FROM users WHERE id = ?")
             .bind(owner_id)
             .fetch_one(&mut *db)
-            .await
-            .ok()?
+            .await?
             .get("username");
         comments_vec.push(Comment {
             id: Some(comment.get("id")),
@@ -160,7 +156,7 @@ pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Optio
         });
     }
 
-    Some(comments_vec)
+    Ok(comments_vec)
 }
 
 /// Get the 20 most recent posts along with the username of the owner
