@@ -1,6 +1,5 @@
 /// This file contains all the routes for the website that return a Template
 /// The routes are mounted in src\main.rs
-/// 
 use rocket_db_pools::Connection;
 use rocket_dyn_templates::{context, Template};
 
@@ -12,7 +11,6 @@ use crate::database;
 #[get("/")]
 pub async fn index(db: Connection<database::MyDatabase>) -> Option<Template> {
     let (posts, posters) = database::get_posts(db).await.ok()?;
-    println!("{:?}", posters);
     Some(Template::render(
         "index",
         context! {
@@ -82,7 +80,10 @@ pub async fn profile(_user: auth::User) -> Option<Template> {
 /// renders a post with the given id
 /// also renders the comments for the post
 #[get("/post/<id>")]
-pub async fn post(id: i32, db: Connection<database::MyDatabase>) -> Option<Template> {
+pub async fn post(
+    id: i32,
+    db: Connection<database::MyDatabase>,
+) -> Option<Template> {
     let (post, poster, comments) = database::get_post_by_id(db, id).await.ok()?;
     Some(Template::render(
         "post",

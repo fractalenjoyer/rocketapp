@@ -1,6 +1,9 @@
+/// This file contains all API routes
+/// The routes are mounted in src\main.rs
 use rocket::form::Form;
 use rocket::http::Cookie;
 use rocket::http::CookieJar;
+use rocket::http::Status;
 use rocket::response::Redirect;
 use rocket_db_pools::Connection;
 
@@ -22,11 +25,12 @@ pub async fn deletepost(
     id: i32,
     user: auth::User,
     db: Connection<database::MyDatabase>,
-) -> Option<Redirect> {
-    database::delete_post(db, user.id, id).await?;
-    Some(Redirect::to("/"))
+) -> Result<Redirect, Status> {
+    database::delete_post(db, user.id, id)
+        .await
+        .map_err(|_| Status::Unauthorized)?;
+    Ok(Redirect::to("/"))
 }
-
 
 /// Deletes a comment with the given id
 /// args are automatically parsed from the request body
@@ -37,9 +41,11 @@ pub async fn deletecomment(
     id: i32,
     user: auth::User,
     db: Connection<database::MyDatabase>,
-) -> Option<Redirect> {
-    database::delete_comment(db, user.id, id).await?;
-    Some(Redirect::to("/"))
+) -> Result<Redirect, Status> {
+    let post_id = database::delete_comment(db, user.id, id)
+        .await
+        .map_err(|_| Status::Unauthorized)?;
+    Ok(Redirect::to(format!("/post/{}", post_id)))
 }
 
 /// Form struct for registering/logging in a user
@@ -48,7 +54,6 @@ pub struct UserForm {
     username: String,
     password: String,
 }
-
 
 /// Registers a user with the given username and password
 /// args are automatically parsed from the request body
@@ -59,14 +64,14 @@ pub async fn register_user(
     db: Connection<database::MyDatabase>,
     user: Form<UserForm>,
     cookies: &CookieJar<'_>,
-) -> Option<Redirect> {
+) -> Redirect {
     let user = match auth::User::new(db, user.username.clone(), user.password.clone()).await {
         Some(user) => user,
-        None => return Some(Redirect::to("/register")),
+        None => return Redirect::to("/register"),
     };
     let claim = user.claim();
     cookies.add_private(Cookie::new("session", claim.to_string()));
-    Some(Redirect::to("/"))
+    Redirect::to("/")
 }
 
 /// Logs in a user with the given username and password
@@ -78,16 +83,15 @@ pub async fn login_user(
     db: Connection<database::MyDatabase>,
     user: Form<UserForm>,
     cookies: &CookieJar<'_>,
-) -> Option<Redirect> {
+) -> Redirect {
     let user = match auth::User::login(db, user.username.clone(), user.password.clone()).await {
         Some(user) => user,
-        None => return Some(Redirect::to("/login")),
+        None => return Redirect::to("/login"),
     };
     let claim = user.claim();
     cookies.add_private(Cookie::new("session", claim.to_string()));
-    Some(Redirect::to("/"))
+    Redirect::to("/")
 }
-
 
 /// Logs out the current user
 /// args are automatically parsed from the request body
@@ -107,9 +111,11 @@ pub async fn create_post(
     user: auth::User,
     db: Connection<database::MyDatabase>,
     post: Form<files::Post<'_>>,
-) -> Option<Redirect> {
-    files::create_post(db, post, user.id).await?;
-    Some(Redirect::to("/"))
+) -> Result<Redirect, Status> {
+    files::create_post(db, post, user.id)
+        .await
+        .map_err(|_| Status::BadRequest)?;
+    Ok(Redirect::to("/"))
 }
 
 /// form struct for creating a comment
@@ -122,12 +128,12 @@ pub struct Comment {
 /// args are automatically parsed from the request body
 /// redirects to the post page if the comment was created successfully
 #[post("/comment/<id>", data = "<comment>")]
-pub async fn comment(
+pub async fn create_comment(
     id: i32,
     user: auth::User,
     db: Connection<database::MyDatabase>,
     comment: Form<Comment>,
-) -> Option<Redirect> {
+) -> Result<Redirect, Status> {
     database::create_comment(
         db,
         database::Comment {
@@ -139,6 +145,6 @@ pub async fn comment(
         },
     )
     .await
-    .ok()?;
-    Some(Redirect::to(format!("/post/{id}")))
+    .map_err(|_| Status::BadRequest)?;
+    Ok(Redirect::to(format!("/post/{id}")))
 }

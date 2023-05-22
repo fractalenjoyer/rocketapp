@@ -35,7 +35,7 @@ fn rocket() -> _ {
                 pages::login,
                 pages::profile,
                 pages::post,
-                pages::user
+                pages::user,
             ],
         )
         .mount(
@@ -45,10 +45,10 @@ fn rocket() -> _ {
                 api::deletepost,
                 api::deletecomment,
                 api::create_post,
+                api::create_comment,
                 api::register_user,
                 api::login_user,
-                api::logout,
-                api::comment
+                api::logout
             ],
         )
 }

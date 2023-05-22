@@ -1,3 +1,4 @@
+/// This file contains all of the sites database operations
 use rocket_db_pools::sqlx::Row;
 use rocket_db_pools::Connection;
 use rocket_db_pools::{sqlx, Database};
@@ -6,7 +7,6 @@ use rocket::serde::Serialize;
 
 use crate::auth::User;
 use crate::files;
-
 
 /// Derive the Database trait for our database struct
 /// This allows attaching the database to the rocket app
@@ -19,11 +19,11 @@ pub struct MyDatabase(sqlx::MySqlPool);
 #[derive(Serialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct Post {
-    pub id: Option<i32>,        // the id of the post
-    pub owner: i32,             // the id of the user who created this post aka User.id
-    pub title: String,          // the title of the post
-    pub body: String,           // the body of the post
-    pub image: String,          // the filename of the image
+    pub id: Option<i32>, // the id of the post
+    pub owner: i32,      // the id of the user who created this post aka User.id
+    pub title: String,   // the title of the post
+    pub body: String,    // the body of the post
+    pub image: String,   // the filename of the image
 }
 
 /// Structs for the database tables
@@ -31,11 +31,11 @@ pub struct Post {
 #[derive(Serialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct Comment {
-    pub id: Option<i32>,        // the id of the comment
-    pub owner: Option<String>,  // the username of the user who created this comment
-    pub owner_id: i32,          // the id of the user who created this comment aka User.id 
-    pub post_id: i32,           // the id of the post this comment belongs to aka Post.id
-    pub body: String,           // the body of the comment
+    pub id: Option<i32>,       // the id of the comment
+    pub owner: Option<String>, // the username of the user who created this comment
+    pub owner_id: i32,         // the id of the user who created this comment aka User.id
+    pub post_id: i32,          // the id of the post this comment belongs to aka Post.id
+    pub body: String,          // the body of the comment
 }
 
 /// creates a post with the given data
@@ -253,7 +253,10 @@ pub async fn get_user_by_username(
 /// returns a user struct
 /// returns an error if the database query fails or the user does not exist
 /// returns an error if the id cannot be parsed to an i64
-pub async fn get_user_by_id(mut db: Connection<MyDatabase>, sub: String) -> Result<User, Box<dyn std::error::Error>> {
+pub async fn get_user_by_id(
+    mut db: Connection<MyDatabase>,
+    sub: String,
+) -> Result<User, Box<dyn std::error::Error>> {
     let user = sqlx::query("SELECT * FROM users where id = ?")
         .bind(sub.parse::<i64>()?)
         .fetch_one(&mut *db)
@@ -273,22 +276,20 @@ pub async fn delete_post(
     mut db: Connection<MyDatabase>,
     owner_id: i32,
     post_id: i32,
-) -> Option<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let path: String = sqlx::query("SELECT image FROM posts WHERE id = ? AND owner_id = ?")
         .bind(post_id)
         .bind(owner_id)
         .fetch_one(&mut *db)
-        .await
-        .ok()?
+        .await?
         .get("image");
     sqlx::query("DELETE FROM posts WHERE id = ? AND owner_id = ?")
         .bind(post_id)
         .bind(owner_id)
         .execute(&mut *db)
-        .await
-        .ok()?;
+        .await?;
     files::delete_file(path)?;
-    Some(())
+    Ok(())
 }
 
 /// Delete a comment given the owner id and comment id
@@ -298,12 +299,18 @@ pub async fn delete_comment(
     mut db: Connection<MyDatabase>,
     owner_id: i32,
     comment_id: i32,
-) -> Option<()> {
+) -> Result<i32, sqlx::Error> {
+    let post_id = sqlx::query("SELECT post_id FROM comments WHERE id = ? AND owner_id = ?")
+        .bind(comment_id)
+        .bind(owner_id)
+        .fetch_one(&mut *db)
+        .await?
+        .get("post_id");
     sqlx::query("DELETE FROM comments WHERE id = ? AND owner_id = ?")
         .bind(comment_id)
         .bind(owner_id)
         .execute(&mut *db)
-        .await
-        .ok()?;
-    Some(())
+        .await?;
+
+    Ok(post_id)
 }

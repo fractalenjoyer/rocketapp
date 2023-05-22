@@ -6,5 +6,5 @@ template_dir = "templates"
 address = "0.0.0.0"
 temp_dir = "tmp"
 limits = { data-form = "64MiB", file = "64MiB", form = "64MiB" }
-secret = "JRHeR6OQBk2RqAhXRcp/q5RPfcGBGAeb++BeI89iQlA="
+secret_key = "JRHeR6OQBk2RqAhXRcp/q5RPfcGBGAeb++BeI89iQlA="
 

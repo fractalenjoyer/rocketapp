@@ -25,13 +25,11 @@ pub async fn create_post(
     db: Connection<database::MyDatabase>,
     mut post: Form<Post<'_>>,
     user_id: i32,
-) -> Option<Redirect> {
-    println!("Title: {}", post.title);
+) -> Result<Redirect, Box<dyn std::error::Error>> {
     let img_path = format!("{}.png", Uuid::new_v4());
     post.image
         .persist_to(format!("static/content/{img_path}",))
-        .await
-        .ok()?;
+        .await?;
     database::create_post(
         db,
         database::Post {
@@ -42,14 +40,12 @@ pub async fn create_post(
             image: img_path,
         },
     )
-    .await
-    .ok()?;
-    Some(Redirect::to("/upload"))
+    .await?;
+    Ok(Redirect::to("/upload"))
 }
 
 /// Deletes a file from the static/content folder
 /// name of the file is given as argument
-pub fn delete_file(name: String) -> Option<()>{
-    std::fs::remove_file(format!("static/content/{}", name)).ok()?;
-    Some(())
+pub fn delete_file(name: String) -> Result<(), std::io::Error>{
+    std::fs::remove_file(format!("static/content/{}", name))
 }

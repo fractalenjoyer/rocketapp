@@ -1,5 +1,5 @@
 {% extends "global/base" %}
 {% block content %}
     {% include "global/header" %}
-    Something went wrong!
+    <h1>We could not find the page you were looking for</h1>
 {% endblock content %}
