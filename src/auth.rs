@@ -27,7 +27,7 @@ impl User {
         password: String,
     ) -> Option<Self> {
         let hash = bcrypt::hash(password).ok()?;
-        let id = database::create_user(db, username.clone(), hash.clone()).await?;
+        let id = database::create_user(db, username.clone(), hash.clone()).await.ok()?;
         Some(Self {
             id,
             username,
