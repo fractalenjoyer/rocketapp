@@ -7,13 +7,20 @@ use uuid::Uuid;
 
 use crate::database;
 
+/// form struct for creating a post
 #[derive(FromForm)]
 pub struct Post<'r> {
-    title: String,
-    body: String,
-    image: TempFile<'r>,
+    title: String,          // title of the post
+    body: String,           // body of the post
+    image: TempFile<'r>,    // image of the post
 }
 
+
+/// Creates a post with the given title, body and image
+/// saves the image to the static/content folder with a random uuid as name
+/// redirects to the upload page if the post was created successfully
+/// only works if the user is logged in
+/// args are automatically parsed from the request body
 pub async fn create_post(
     db: Connection<database::MyDatabase>,
     mut post: Form<Post<'_>>,
@@ -40,7 +47,9 @@ pub async fn create_post(
     Some(Redirect::to("/upload"))
 }
 
-pub fn delete_file(path: String) -> Option<()>{
-    std::fs::remove_file(format!("static/content/{}", path)).ok()?;
+/// Deletes a file from the static/content folder
+/// name of the file is given as argument
+pub fn delete_file(name: String) -> Option<()>{
+    std::fs::remove_file(format!("static/content/{}", name)).ok()?;
     Some(())
 }
