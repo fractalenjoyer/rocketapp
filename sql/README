@@ -1,0 +1,2 @@
+Import rocketapp.mysql.sql into XAMPP
+ignore rocketapp.sqlite.sql file since it appears to be broken
