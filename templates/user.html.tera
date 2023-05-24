@@ -3,9 +3,9 @@
 {% block content %} {% include "global/header" %}
 <script defer src="/static/scripts/user.js"></script>
 <main>
-	<div class="modal">
+	{# <div class="modal">
 		<iframe frameborder="0" class="modal-content"></iframe>
-	</div>
+	</div> #}
 	<h1>{{ posters.0 }}</h1>
 	{{ macros::render_posts(posts=posts) }}
 </main>

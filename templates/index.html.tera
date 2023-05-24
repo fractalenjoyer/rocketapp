@@ -4,9 +4,9 @@
     {% include "global/header" %}
     <script defer src="/static/scripts/index.js"></script>
     <main>
-        <div class="modal">
+        {# <div class="modal">
             <iframe frameborder="0" class="modal-content"></iframe>
-        </div>
+        </div> #}
         <h1> </h1>
         {{ macros::render_posts(posts=posts) }}
     </main>
