@@ -54,13 +54,13 @@ fn rocket() -> _ {
 }
 
 #[catch(401)]
-fn unauthorized() -> RawHtml<String> {
-    RawHtml(
-        maud::html!(
-            h1 { "Login to view this page" }
-            a href="/login" { "Login" }
-        )
-        .into_string(),
+fn unauthorized() -> Template {
+    Template::render(
+        "401",
+        context! {
+            title: "401",
+            style: "401.css"
+        },
     )
 }
 

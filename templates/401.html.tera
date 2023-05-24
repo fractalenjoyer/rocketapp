@@ -1,0 +1,6 @@
+{% extends "global/base" %}
+{% block content %}
+    {% include "global/header" %}
+    <h1>To Access this page you need to be signed in</h1>
+    <a href="/login">Sign in here</a>
+{% endblock content %}

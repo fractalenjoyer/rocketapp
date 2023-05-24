@@ -129,34 +129,39 @@ pub async fn get_post_by_id(
     Ok((post, poster, comments))
 }
 
-/// get comments for a post
-/// returns a vector of comments for the given post id
-/// returns None if the database query fails
-pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Result<Vec<Comment>, sqlx::Error> {
-    let comments =
-        sqlx::query("SELECT * FROM comments WHERE post_id = ? ORDER BY id DESC LIMIT 40")
-            .bind(post_id)
-            .fetch_all(&mut *db)
-            .await?;
+/// Get the 20 most recent posts along with the username of the owner given a username
+/// returns a vector of posts and a vector of usernames
+/// returns an error if the database query fails
+pub async fn get_posts_by_user(
+    mut db: Connection<MyDatabase>,
+    username: String,
+) -> Result<(Vec<Post>, Vec<String>), sqlx::Error> {
+    let posts = sqlx::query("SELECT * FROM posts WHERE owner_id = (SELECT id FROM users WHERE username = ?) ORDER BY id DESC LIMIT 20")
+        .bind(username)
+        .fetch_all(&mut *db)
+        .await?;
 
-    let mut comments_vec = Vec::new();
-    for comment in comments {
-        let owner_id = comment.get("owner_id");
-        let owner = sqlx::query("SELECT username FROM users WHERE id = ?")
-            .bind(owner_id)
-            .fetch_one(&mut *db)
-            .await?
-            .get("username");
-        comments_vec.push(Comment {
-            id: Some(comment.get("id")),
-            owner,
-            owner_id,
-            post_id: comment.get("post_id"),
-            body: comment.get("body"),
+    let mut posts_vec = Vec::new();
+    let mut posters: Vec<String> = Vec::new();
+    for post in posts {
+        let owner_id: i32 = post.get("owner_id");
+        posts_vec.push(Post {
+            id: Some(post.get("id")),
+            owner: owner_id,
+            title: post.get("title"),
+            body: post.get("body"),
+            image: post.get("image"),
         });
+        posters.push(
+            sqlx::query("SELECT username FROM users WHERE id = ?")
+                .bind(owner_id)
+                .fetch_one(&mut *db)
+                .await?
+                .get("username"),
+        )
     }
 
-    Ok(comments_vec)
+    Ok((posts_vec, posters))
 }
 
 /// Get the 20 most recent posts along with the username of the owner
@@ -192,39 +197,34 @@ pub async fn get_posts(
     Ok((posts_vec, posters))
 }
 
-/// Get the 20 most recent posts along with the username of the owner given a username
-/// returns a vector of posts and a vector of usernames
-/// returns an error if the database query fails
-pub async fn get_posts_by_user(
-    mut db: Connection<MyDatabase>,
-    username: String,
-) -> Result<(Vec<Post>, Vec<String>), sqlx::Error> {
-    let posts = sqlx::query("SELECT * FROM posts WHERE owner_id = (SELECT id FROM users WHERE username = ?) ORDER BY id DESC LIMIT 20")
-        .bind(username)
-        .fetch_all(&mut *db)
-        .await?;
+/// get comments for a post
+/// returns a vector of comments for the given post id
+/// returns None if the database query fails
+pub async fn get_comments(mut db: Connection<MyDatabase>, post_id: i32) -> Result<Vec<Comment>, sqlx::Error> {
+    let comments =
+        sqlx::query("SELECT * FROM comments WHERE post_id = ? ORDER BY id DESC LIMIT 40")
+            .bind(post_id)
+            .fetch_all(&mut *db)
+            .await?;
 
-    let mut posts_vec = Vec::new();
-    let mut posters: Vec<String> = Vec::new();
-    for post in posts {
-        let owner_id: i32 = post.get("owner_id");
-        posts_vec.push(Post {
-            id: Some(post.get("id")),
-            owner: owner_id,
-            title: post.get("title"),
-            body: post.get("body"),
-            image: post.get("image"),
+    let mut comments_vec = Vec::new();
+    for comment in comments {
+        let owner_id = comment.get("owner_id");
+        let owner = sqlx::query("SELECT username FROM users WHERE id = ?")
+            .bind(owner_id)
+            .fetch_one(&mut *db)
+            .await?
+            .get("username");
+        comments_vec.push(Comment {
+            id: Some(comment.get("id")),
+            owner,
+            owner_id,
+            post_id: comment.get("post_id"),
+            body: comment.get("body"),
         });
-        posters.push(
-            sqlx::query("SELECT username FROM users WHERE id = ?")
-                .bind(owner_id)
-                .fetch_one(&mut *db)
-                .await?
-                .get("username"),
-        )
     }
 
-    Ok((posts_vec, posters))
+    Ok(comments_vec)
 }
 
 /// Get userdetails for a given username
