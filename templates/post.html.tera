@@ -1,6 +1,7 @@
 {% import "global/macros" as macros %}
 {% extends "global/base" %}
 {% block content %}
+{% include "global/header" %}
 <link rel="stylesheet" href="/static/styles/post.css">
  <main>
     <a class="poster" href="/user/{{ poster }}">u/{{ poster }}</a>

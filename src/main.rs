@@ -1,7 +1,8 @@
 #[macro_use]
 extern crate rocket;
 
-use rocket::{fs::FileServer, response::{content::RawHtml, Redirect},};
+use rocket::fs::FileServer;
+use rocket::response::Redirect;
 // use rocket::{fairing, Rocket, Build}; // to add migrations at some point
 use rocket_db_pools::Database;
 use rocket_dyn_templates::{context, Template};

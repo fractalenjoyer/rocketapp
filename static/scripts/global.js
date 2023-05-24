@@ -11,20 +11,10 @@ const modal = document.querySelector(".modal");
 const modalContent = document.querySelector(".modal-content");
 
 const showPost = (id) => {
-	// check if user is logged in by fetching /api/whoami
-	// if not, redirect to login page
-	fetch("/api/whoami").then((res) => res.status)
-    .then((status) => {
-        if (status === 200) {
-            modalContent.src = `/post/${id}`;
-            modal.style.display = "flex";
-        } else {
-            window.location.href = "/login";
-        }
-    })
+	window.location.href = `/post/${id}`;
 };
 
-// would rather replace this with in-html event listener for clarity
-modal.onclick = (e) => {
-	e.target.style.display = "none";
-};
+// // would rather replace this with in-html event listener for clarity
+// modal.onclick = (e) => {
+// 	e.target.style.display = "none";
+// };
